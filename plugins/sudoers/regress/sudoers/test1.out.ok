@@ -1,0 +1,7 @@
+Parses OK.
+
+
+
+user1	ALL = /usr/bin/su - : ALL = /usr/bin/id
+user2	ALL = NOPASSWD: NOEXEC: /usr/bin/vi : ALL = PASSWD: EXEC: /usr/bin/echo
+user4	ALL = FOLLOW: sudoedit /etc/motd : ALL = NOFOLLOW: sudoedit /home/*/*
