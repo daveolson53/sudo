@@ -1,16 +1,16 @@
 Source: sudo
 Section: admin
 Priority: optional
-Maintainer: Bdale Garbee <bdale@gag.com>
-Build-Depends: debhelper (>= 7), libpam0g-dev, libldap2-dev, libsasl2-dev, libselinux1-dev [linux-any], autoconf, autotools-dev, bison, flex, libaudit-dev [linux-any]
-Standards-Version: 3.9.5
-Vcs-Git: git://anonscm.debian.org/collab-maint/sudo.git
-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/sudo.git
-Homepage: http://www.sudo.ws/
+Maintainer: Dave Olson <olson@cumulusnetworks.com>
+Build-Depends: debhelper (>= 7), libpam0g-dev, libldap2-dev, libsasl2-dev,
+    libselinux1-dev [linux-any], autoconf, autotools-dev, bison, flex,
+    libaudit-dev [linux-any], libtacplus-map-dev
+Standards-Version: 3.9.6
+Homepage: http://www.cumulusnetworks.com
 
 Package: sudo
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libpam-modules
+Depends: ${shlibs:Depends}, ${misc:Depends}, libpam-modules, libtacplus-map1
 Conflicts: sudo-ldap
 Replaces: sudo-ldap
 Description: Provide limited super user privileges to specific users

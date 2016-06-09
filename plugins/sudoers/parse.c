@@ -46,6 +46,9 @@
 #include "lbuf.h"
 #include <gram.h>
 
+#include <libaudit.h>
+#include <tacplus/map_tacplus_user.h>
+
 /* Characters that must be quoted in sudoers */
 #define	SUDOERS_QUOTED	":\\,=#\""
 
@@ -146,6 +149,8 @@ int
 sudo_file_lookup(struct sudo_nss *nss, int validated, int pwflag)
 {
     int match, host_match, runas_match, cmnd_match;
+    int trytacplus = 1;
+    struct passwd tacpluspw, *pw;
     struct cmndspec *cs;
     struct cmndtag *tags = NULL;
     struct privilege *priv;
@@ -155,6 +160,8 @@ sudo_file_lookup(struct sudo_nss *nss, int validated, int pwflag)
 
     if (nss->handle == NULL)
 	debug_return_int(validated);
+
+    pw = sudo_user.pw;
 
     /*
      * Only check the actual command if pwflag is not set.
@@ -174,7 +181,7 @@ sudo_file_lookup(struct sudo_nss *nss, int validated, int pwflag)
 	CLR(validated, FLAG_NO_HOST);
 	match = DENY;
 	TAILQ_FOREACH(us, &userspecs, entries) {
-	    if (userlist_matches(sudo_user.pw, &us->users) != ALLOW)
+	    if (userlist_matches(pw, &us->users) != ALLOW)
 		continue;
 	    TAILQ_FOREACH(priv, &us->privileges, entries) {
 		if (hostlist_matches(&priv->hostlist) != ALLOW)
@@ -207,8 +214,9 @@ sudo_file_lookup(struct sudo_nss *nss, int validated, int pwflag)
     set_perms(PERM_RUNAS);
 
     match = UNSPEC;
+relook:
     TAILQ_FOREACH_REVERSE(us, &userspecs, userspec_list, entries) {
-	if (userlist_matches(sudo_user.pw, &us->users) != ALLOW)
+	if (userlist_matches(pw, &us->users) != ALLOW)
 	    continue;
 	CLR(validated, FLAG_NO_USER);
 	TAILQ_FOREACH_REVERSE(priv, &us->privileges, privilege_list, entries) {
@@ -279,6 +287,23 @@ sudo_file_lookup(struct sudo_nss *nss, int validated, int pwflag)
 	CLR(validated, VALIDATE_OK);
 	if (tags != NULL && tags->nopasswd != UNSPEC)
 	    def_authenticate = !tags->nopasswd;
+    }
+    else if (match == UNSPEC && trytacplus) {
+	uid_t auid = audit_getloginuid();
+	unsigned session = map_get_sessionid();
+	char *nm;
+	static char mappednm[256];
+	trytacplus = 0;
+	if(auid && auid != -1 && session && session != ~0) {
+	    nm = lookup_mapuid(pw->pw_uid, auid, session,
+		    mappednm, sizeof mappednm);
+	    if (nm) {
+	    tacpluspw = *pw;
+	    pw = &tacpluspw;
+	    pw->pw_name = mappednm;
+	    goto relook;
+	    }
+	}
     }
     restore_perms();
     debug_return_int(validated);
