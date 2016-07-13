@@ -1,6 +1,7 @@
 sudo (1.8.10p4-1) UNRELEASED; urgency=medium
   * Added support for tacacs users to use tacacs login name via
-    libtacplus_map in sudoers.so default plugin
+    libtacplus_map in sudoers.so default plugin.  libtacplus_map1
+    is dlopen'ed, so sudo remains independent of tacacs client
 
  -- Dave Olson <olson@cumulusnetworks.com>  Thu, 09 Jun 2016 14:14:32 -0700
 

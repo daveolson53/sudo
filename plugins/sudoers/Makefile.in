@@ -50,7 +50,7 @@ INSTALL = $(SHELL) $(top_srcdir)/install-sh -c
 LT_LIBS = $(top_builddir)/common/libsudo_util.la $(LIBOBJDIR)libreplace.la
 LIBS = $(LT_LIBS) @LIBINTL@
 NET_LIBS = @NET_LIBS@
-SUDOERS_LIBS = @SUDOERS_LIBS@ @AFS_LIBS@ @GETGROUPS_LIB@ $(LIBS) $(NET_LIBS) @ZLIB@ @LIBDL@ -ltacplus_map
+SUDOERS_LIBS = @SUDOERS_LIBS@ @AFS_LIBS@ @GETGROUPS_LIB@ $(LIBS) $(NET_LIBS) @ZLIB@ @LIBDL@
 REPLAY_LIBS = @REPLAY_LIBS@ @ZLIB@
 
 # C preprocessor flags

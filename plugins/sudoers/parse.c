@@ -40,14 +40,14 @@
 #include <ctype.h>
 #include <pwd.h>
 #include <grp.h>
+#include <dlfcn.h>
+#include <libaudit.h>
 
 #include "sudoers.h"
 #include "parse.h"
 #include "lbuf.h"
 #include <gram.h>
 
-#include <libaudit.h>
-#include <tacplus/map_tacplus_user.h>
 
 /* Characters that must be quoted in sudoers */
 #define	SUDOERS_QUOTED	":\\,=#\""
@@ -290,18 +290,40 @@ relook:
     }
     else if (match == UNSPEC && trytacplus) {
 	uid_t auid = audit_getloginuid();
-	unsigned session = map_get_sessionid();
-	char *nm;
-	static char mappednm[256];
+
 	trytacplus = 0;
-	if(auid && auid != -1 && session && session != ~0) {
-	    nm = lookup_mapuid(pw->pw_uid, auid, session,
-		    mappednm, sizeof mappednm);
-	    if (nm) {
-	    tacpluspw = *pw;
-	    pw = &tacpluspw;
-	    pw->pw_name = mappednm;
-	    goto relook;
+
+	/*
+	 * Check if a mapped TACACS user is trying to sudo. If so, we want
+	 * to use their original password, not the local mapped user's passwd
+	 * dlopen and dlsym so sudo works without the tacacs client software
+	 * being installed
+	 */
+	if (auid && auid != -1) {
+            static char mappednm[256];
+	    static void *dlh;
+	    static char *(*maplookup)(uid_t uid, uid_t auid,
+		    unsigned session, char *mappedname, size_t maplen) = NULL;
+	    unsigned (*map_session)(void) = NULL;
+	    unsigned session;
+	    char *nm = NULL;
+	    if (!dlh) {
+		dlh = dlopen("libtacplus_map.so.1", RTLD_NOW);
+		if (dlh)
+		    maplookup = dlsym(dlh, "lookup_mapuid");
+		    map_session = dlsym(dlh, "map_get_sessionid");
+	    }
+	    if (maplookup && map_session) {
+		session = map_session();
+		if (session && session != ~0)
+		    nm = maplookup(pw->pw_uid, auid, session,
+			mappednm, sizeof mappednm);
+		if (nm) {
+		    tacpluspw = *pw;
+		    pw = &tacpluspw;
+		    pw->pw_name = mappednm;
+		    goto relook;
+		}
 	    }
 	}
     }
